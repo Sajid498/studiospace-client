@@ -128,3 +128,23 @@
     @apply font-sans;
   }
 }
+
+
+/* StudioSpace hero slider */
+.studio-hero-swiper .swiper-pagination {
+  bottom: 35px !important;
+}
+
+.studio-hero-swiper .swiper-pagination-bullet {
+  width: 9px;
+  height: 9px;
+  background: white;
+  opacity: 0.55;
+}
+
+.studio-hero-swiper .swiper-pagination-bullet-active {
+  width: 28px;
+  border-radius: 999px;
+  background: #f97316;
+  opacity: 1;
+}
