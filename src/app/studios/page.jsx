@@ -14,6 +14,11 @@ const categories = [
   "Music Suite",
   "Art Workshop",
 ];
+const normalizeCategory = (value) => {
+  if (value === "Podcast Lounge") return "Podcast Room";
+  if (value === "Workshop") return "Art Workshop";
+  return value;
+};
 
 export default function StudiosPage() {
   const [studios, setStudios] = useState([]);
@@ -55,7 +60,8 @@ export default function StudiosPage() {
 
     return studios.filter((studio) => {
       const matchesCategory =
-        category === "All Categories" || studio.category === category;
+  category === "All Categories" ||
+  normalizeCategory(studio.category) === category;
 
       const matchesSearch =
         !query ||

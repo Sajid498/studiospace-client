@@ -17,9 +17,9 @@ import { createStudio, uploadStudioImage } from "@/lib/api";
 const categories = [
   "Photo Studio",
   "Film Stage",
-  "Podcast Lounge",
+  "Podcast Room",
   "Music Suite",
-  "Workshop",
+  "Art Workshop",
 ];
 
 const amenityOptions = [

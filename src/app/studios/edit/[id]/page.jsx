@@ -16,9 +16,9 @@ import {
 const categories = [
   "Photo Studio",
   "Film Stage",
-  "Podcast Lounge",
+  "Podcast Room",
   "Music Suite",
-  "Workshop",
+  "Art Workshop",
 ];
 
 const amenityOptions = [
@@ -91,7 +91,12 @@ export default function EditStudioPage() {
 
         setForm({
           title: studio.title || "",
-          category: studio.category || "",
+          category:
+  studio.category === "Podcast Lounge"
+    ? "Podcast Room"
+    : studio.category === "Workshop"
+      ? "Art Workshop"
+      : studio.category || "",
           hourlyRate: String(studio.hourlyRate ?? ""),
           securityDeposit: String(studio.securityDeposit ?? ""),
           maxCapacity: String(studio.maxCapacity ?? ""),
