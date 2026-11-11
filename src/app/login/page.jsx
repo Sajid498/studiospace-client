@@ -58,7 +58,7 @@ export default function LoginPage() {
     try {
 const { error } = await signIn.social({
   provider: "google",
-  callbackURL: "http://localhost:3000/",
+  callbackURL: `${window.location.origin}/`,
 });
 
       if (error) {

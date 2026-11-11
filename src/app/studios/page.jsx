@@ -22,10 +22,17 @@ export default function StudiosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    let active = true;
+ useEffect(() => {
+  let active = true;
 
-    const loadStudios = async () => {
+  const params = new URLSearchParams(window.location.search);
+  const requestedCategory = params.get("category");
+
+  if (categories.includes(requestedCategory)) {
+    setCategory(requestedCategory);
+  }
+
+  const loadStudios = async () => {
       try {
         const data = await getStudios();
         if (active) setStudios(data);
