@@ -96,3 +96,61 @@ export async function updateBookingStatus(id, status) {
 
   return result;
 }
+
+
+export async function createStudio(studioData) {
+  const response = await fetch(`${API_URL}/api/studios`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(studioData),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.message === "Required fields are missing"
+        ? `Missing fields: ${(result.missingFields || []).join(", ")}`
+        : result.message || "Failed to create studio"
+    );
+  }
+
+  return result.data;
+}
+
+export async function deleteStudio(id) {
+  const response = await fetch(`${API_URL}/api/studios/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to delete studio");
+  }
+
+  return result;
+}
+
+export async function updateStudio(id, studioData) {
+  const response = await fetch(`${API_URL}/api/studios/${id}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(studioData),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to update studio");
+  }
+
+  return result.data;
+}
