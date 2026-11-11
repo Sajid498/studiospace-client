@@ -18,6 +18,7 @@ export default function MyBookingsPage() {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState("");
   const [error, setError] = useState("");
+  const [bookingToCancel, setBookingToCancel] = useState(null);
 
   const loadBookings = async () => {
     try {
@@ -92,7 +93,10 @@ export default function MyBookingsPage() {
         <p className="mt-3 text-muted-foreground">
           Please log in to view your bookings.
         </p>
-        <Link href="/login" className="mt-5 rounded-full bg-orange-500 px-6 py-3 font-semibold text-white">
+        <Link
+          href="/login"
+          className="mt-5 rounded-full bg-orange-500 px-6 py-3 font-semibold text-white"
+        >
           Login
         </Link>
       </main>
@@ -115,7 +119,10 @@ export default function MyBookingsPage() {
         {error && (
           <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-700">
             {error}
-            <button onClick={loadBookings} className="ml-3 font-semibold underline">
+            <button
+              onClick={loadBookings}
+              className="ml-3 font-semibold underline"
+            >
               Try again
             </button>
           </div>
@@ -128,7 +135,10 @@ export default function MyBookingsPage() {
             <p className="mt-2 text-muted-foreground">
               Explore studios and reserve your first creative space.
             </p>
-            <Link href="/studios" className="mt-6 inline-flex rounded-full bg-orange-500 px-7 py-3 font-semibold text-white hover:bg-orange-600">
+            <Link
+              href="/studios"
+              className="mt-6 inline-flex rounded-full bg-orange-500 px-7 py-3 font-semibold text-white hover:bg-orange-600"
+            >
               Explore Studios
             </Link>
           </div>
@@ -141,7 +151,10 @@ export default function MyBookingsPage() {
             const processing = processingId === booking._id;
 
             return (
-              <article key={booking._id} className="overflow-hidden rounded-2xl border border-border bg-card">
+              <article
+                key={booking._id}
+                className="overflow-hidden rounded-2xl border border-border bg-card"
+              >
                 <div className="grid md:grid-cols-[240px_1fr]">
                   <img
                     src={booking.studioImage}
@@ -154,12 +167,18 @@ export default function MyBookingsPage() {
                       <span className="text-sm font-semibold text-orange-500">
                         {booking.studioCategory}
                       </span>
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusStyle(booking.status)}`}>
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusStyle(
+                          booking.status
+                        )}`}
+                      >
                         {booking.status}
                       </span>
                     </div>
 
-                    <h2 className="mt-3 text-xl font-bold">{booking.studioTitle}</h2>
+                    <h2 className="mt-3 text-xl font-bold">
+                      {booking.studioTitle}
+                    </h2>
 
                     <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                       <MapPin size={16} />
@@ -168,7 +187,9 @@ export default function MyBookingsPage() {
 
                     <div className="mt-5 grid gap-4 sm:grid-cols-2">
                       <div>
-                        <p className="text-xs text-muted-foreground">Booking starts</p>
+                        <p className="text-xs text-muted-foreground">
+                          Booking starts
+                        </p>
                         <p className="mt-1 flex items-center gap-2 text-sm font-medium">
                           <CalendarDays size={16} />
                           {formatDate(booking.startAt)}
@@ -176,7 +197,9 @@ export default function MyBookingsPage() {
                       </div>
 
                       <div>
-                        <p className="text-xs text-muted-foreground">Booking ends</p>
+                        <p className="text-xs text-muted-foreground">
+                          Booking ends
+                        </p>
                         <p className="mt-1 flex items-center gap-2 text-sm font-medium">
                           <Clock size={16} />
                           {formatDate(booking.endAt)}
@@ -186,9 +209,14 @@ export default function MyBookingsPage() {
 
                     <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-border pt-4">
                       <div>
-                        <p className="text-xs text-muted-foreground">Estimated rental cost</p>
+                        <p className="text-xs text-muted-foreground">
+                          Estimated rental cost
+                        </p>
                         <p className="mt-1 text-lg font-bold text-orange-500">
-                          ৳{Number(booking.totalPrice || 0).toLocaleString("en-BD")}
+                          ৳
+                          {Number(booking.totalPrice || 0).toLocaleString(
+                            "en-BD"
+                          )}
                         </p>
                       </div>
 
@@ -196,11 +224,7 @@ export default function MyBookingsPage() {
                         {isRenter && booking.status === "Pending" && (
                           <button
                             disabled={processing}
-                            onClick={() => {
-                              if (window.confirm("Are you sure you want to cancel this booking?")) {
-                                handleAction(booking._id, "cancel");
-                              }
-                            }}
+                            onClick={() => setBookingToCancel(booking)}
                             className="rounded-full border border-red-500 px-5 py-2 text-sm font-semibold text-red-500 hover:bg-red-50 disabled:opacity-50"
                           >
                             {processing ? "Processing..." : "Cancel Booking"}
@@ -210,7 +234,13 @@ export default function MyBookingsPage() {
                         {isHost && booking.status === "Pending" && (
                           <button
                             disabled={processing}
-                            onClick={() => handleAction(booking._id, "update", "Confirmed")}
+                            onClick={() =>
+                              handleAction(
+                                booking._id,
+                                "update",
+                                "Confirmed"
+                              )
+                            }
                             className="rounded-full bg-green-600 px-5 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-50"
                           >
                             {processing ? "Processing..." : "Confirm Booking"}
@@ -220,7 +250,13 @@ export default function MyBookingsPage() {
                         {isHost && booking.status === "Confirmed" && (
                           <button
                             disabled={processing}
-                            onClick={() => handleAction(booking._id, "update", "Completed")}
+                            onClick={() =>
+                              handleAction(
+                                booking._id,
+                                "update",
+                                "Completed"
+                              )
+                            }
                             className="rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                           >
                             {processing ? "Processing..." : "Mark Completed"}
@@ -235,6 +271,58 @@ export default function MyBookingsPage() {
           })}
         </div>
       </div>
+
+      {bookingToCancel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-5">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-booking-title"
+            className="w-full max-w-md rounded-2xl border border-border bg-card p-7 shadow-2xl"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
+              <CalendarDays size={24} />
+            </div>
+
+            <h2
+              id="cancel-booking-title"
+              className="mt-5 text-xl font-bold"
+            >
+              Cancel this booking?
+            </h2>
+
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              Are you sure you want to cancel your booking for{" "}
+              <span className="font-semibold text-foreground">
+                {bookingToCancel.studioTitle}
+              </span>
+              ? This action cannot be undone.
+            </p>
+
+            <div className="mt-7 flex flex-wrap justify-end gap-3">
+              <button
+                disabled={processingId === bookingToCancel._id}
+                onClick={() => setBookingToCancel(null)}
+                className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold hover:bg-muted disabled:opacity-50"
+              >
+                Keep Booking
+              </button>
+
+              <button
+                disabled={processingId === bookingToCancel._id}
+                onClick={async () => {
+                  const bookingId = bookingToCancel._id;
+                  setBookingToCancel(null);
+                  await handleAction(bookingId, "cancel");
+                }}
+                className="rounded-full bg-red-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                Yes, Cancel Booking
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
