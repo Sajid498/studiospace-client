@@ -171,3 +171,54 @@ export async function updateStudio(id, studioData) {
 
   return result.data;
 }
+
+export async function getStudioReviews(studioId) {
+  const response = await fetch(
+    `${API_URL}/api/reviews/studio/${studioId}`,
+    {
+      cache: "no-store",
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to fetch studio reviews");
+  }
+
+  return result.data;
+}
+
+export async function createReview(reviewData) {
+  const response = await fetch(`${API_URL}/api/reviews`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(reviewData),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to submit review");
+  }
+
+  return result.data;
+}
+
+export async function getMyReviews() {
+  const response = await fetch(`${API_URL}/api/reviews/my-reviews`, {
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to fetch your reviews");
+  }
+
+  return result.data;
+}

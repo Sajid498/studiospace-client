@@ -13,26 +13,53 @@ import {
   CheckCircle2,
   CalendarDays,
   User,
+  Star,
 } from "lucide-react";
-import { getStudioById } from "@/lib/api";
+import { getStudioById, getStudioReviews } from "@/lib/api";
 
 export default function StudioDetailsPage() {
   const { id } = useParams();
+
   const [studio, setStudio] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [reviewSummary, setReviewSummary] = useState({
+    averageRating: null,
+    reviewCount: 0,
+  });
   const [loading, setLoading] = useState(true);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [reviewError, setReviewError] = useState("");
 
   useEffect(() => {
     let active = true;
 
     const loadStudio = async () => {
       try {
-        const data = await getStudioById(id);
-        if (active) setStudio(data);
+        const [studioData, reviewData] = await Promise.all([
+          getStudioById(id),
+          getStudioReviews(id),
+        ]);
+
+        if (active) {
+          setStudio(studioData);
+          setReviews(reviewData?.reviews || []);
+          setReviewSummary(
+            reviewData?.summary || {
+              averageRating: null,
+              reviewCount: 0,
+            }
+          );
+        }
       } catch (err) {
-        if (active) setError(err.message || "Unable to load studio");
+        if (active) {
+          setError(err.message || "Unable to load studio");
+        }
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          setReviewsLoading(false);
+        }
       }
     };
 
@@ -81,11 +108,18 @@ export default function StudioDetailsPage() {
 
         <div className="overflow-hidden rounded-3xl border border-border bg-card">
           <div className="relative h-[300px] bg-muted sm:h-[450px]">
-            <img
-              src={studio.image}
-              alt={studio.title}
-              className="h-full w-full object-cover"
-            />
+            {studio.image ? (
+              <img
+                src={studio.image}
+                alt={studio.title}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-muted-foreground">
+                No image available
+              </div>
+            )}
+
             <span className="absolute bottom-5 left-5 rounded-full bg-background/95 px-4 py-2 text-sm font-semibold">
               {studio.category}
             </span>
@@ -102,6 +136,28 @@ export default function StudioDetailsPage() {
                 {studio.location}
               </p>
 
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+
+                {Number(reviewSummary.reviewCount) > 0 ? (
+                  <>
+                    <span className="font-semibold">
+                      {Number(reviewSummary.averageRating).toFixed(1)}
+                    </span>
+                    <span className="text-muted-foreground">
+                      ({reviewSummary.reviewCount}{" "}
+                      {Number(reviewSummary.reviewCount) === 1
+                        ? "review"
+                        : "reviews"})
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">
+                    No reviews yet
+                  </span>
+                )}
+              </div>
+
               <div className="mt-8 grid gap-4 sm:grid-cols-3">
                 <div className="rounded-xl bg-muted/50 p-4">
                   <Users className="mb-2 text-orange-500" size={21} />
@@ -115,7 +171,7 @@ export default function StudioDetailsPage() {
                   <CalendarDays className="mb-2 text-orange-500" size={21} />
                   <p className="text-xs text-muted-foreground">Hourly Rate</p>
                   <p className="mt-1 font-bold">
-                    ৳{Number(studio.hourlyRate).toLocaleString("en-BD")}
+                    ৳{Number(studio.hourlyRate || 0).toLocaleString("en-BD")}
                   </p>
                 </div>
 
@@ -125,7 +181,7 @@ export default function StudioDetailsPage() {
                     Security Deposit
                   </p>
                   <p className="mt-1 font-bold">
-                    ৳{Number(studio.securityDeposit).toLocaleString("en-BD")}
+                    ৳{Number(studio.securityDeposit || 0).toLocaleString("en-BD")}
                   </p>
                 </div>
               </div>
@@ -161,6 +217,104 @@ export default function StudioDetailsPage() {
                   </p>
                 )}
               </div>
+
+              <div className="mt-12 border-t border-border pt-10">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-2xl font-bold">
+                      Customer Reviews
+                    </h2>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Feedback from people who have booked this studio.
+                    </p>
+                  </div>
+
+                  {Number(reviewSummary.reviewCount) > 0 && (
+                    <div className="flex items-center gap-2 rounded-xl bg-muted/50 px-4 py-3">
+                      <Star className="h-5 w-5 fill-amber-400 text-amber-400" />
+                      <span className="text-lg font-bold">
+                        {Number(reviewSummary.averageRating).toFixed(1)}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        / 5
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {reviewsLoading ? (
+                  <div className="flex justify-center py-12">
+                    <LoaderCircle className="h-7 w-7 animate-spin text-orange-500" />
+                  </div>
+                ) : reviewError ? (
+                  <p className="mt-6 text-sm text-red-500">
+                    {reviewError}
+                  </p>
+                ) : reviews.length === 0 ? (
+                  <div className="mt-6 rounded-xl border border-dashed border-border py-12 text-center">
+                    <Star className="mx-auto h-8 w-8 text-muted-foreground" />
+                    <h3 className="mt-3 font-semibold">
+                      No reviews yet
+                    </h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Be the first to share your experience after booking this studio.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-6 space-y-4">
+                    {reviews.map((review) => (
+                      <article
+                        key={review._id || review.createdAt}
+                        className="rounded-xl border border-border p-5"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500/10 text-orange-500">
+                              <User size={19} />
+                            </div>
+
+                            <div>
+                              <p className="font-semibold">
+                                {review.renterName || "Studio Guest"}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {review.createdAt
+                                  ? new Date(review.createdAt).toLocaleDateString(
+                                      "en-BD",
+                                      {
+                                        day: "numeric",
+                                        month: "short",
+                                        year: "numeric",
+                                      }
+                                    )
+                                  : ""}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                size={15}
+                                className={
+                                  star <= Number(review.rating)
+                                    ? "fill-amber-400 text-amber-400"
+                                    : "text-muted-foreground"
+                                }
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        <p className="mt-4 whitespace-pre-line text-sm leading-7 text-muted-foreground">
+                          {review.comment}
+                        </p>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             <aside>
@@ -183,12 +337,12 @@ export default function StudioDetailsPage() {
 
                 <p className="text-sm text-muted-foreground">Price per hour</p>
                 <p className="mt-1 text-3xl font-bold">
-                  ৳{Number(studio.hourlyRate).toLocaleString("en-BD")}
+                  ৳{Number(studio.hourlyRate || 0).toLocaleString("en-BD")}
                 </p>
 
                 <p className="mt-2 text-xs text-muted-foreground">
                   Security deposit: ৳
-                  {Number(studio.securityDeposit).toLocaleString("en-BD")}
+                  {Number(studio.securityDeposit || 0).toLocaleString("en-BD")}
                 </p>
 
                 <Link

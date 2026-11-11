@@ -3,7 +3,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, MapPin, Users, ArrowRight, LoaderCircle, SlidersHorizontal } from "lucide-react";
+import {
+  Search,
+  MapPin,
+  Users,
+  ArrowRight,
+  LoaderCircle,
+  SlidersHorizontal,
+  Star,
+} from "lucide-react";
 import { getStudios } from "@/lib/api";
 
 const categories = [
@@ -14,6 +22,7 @@ const categories = [
   "Music Suite",
   "Art Workshop",
 ];
+
 const normalizeCategory = (value) => {
   if (value === "Podcast Lounge") return "Podcast Room";
   if (value === "Workshop") return "Art Workshop";
@@ -27,24 +36,31 @@ export default function StudiosPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
- useEffect(() => {
-  let active = true;
+  useEffect(() => {
+    let active = true;
 
-  const params = new URLSearchParams(window.location.search);
-  const requestedCategory = params.get("category");
+    const params = new URLSearchParams(window.location.search);
+    const requestedCategory = params.get("category");
 
-  if (categories.includes(requestedCategory)) {
-    setCategory(requestedCategory);
-  }
+    if (categories.includes(requestedCategory)) {
+      setCategory(requestedCategory);
+    }
 
-  const loadStudios = async () => {
+    const loadStudios = async () => {
       try {
         const data = await getStudios();
-        if (active) setStudios(data);
+
+        if (active) {
+          setStudios(data);
+        }
       } catch (err) {
-        if (active) setError(err.message || "Unable to load studios");
+        if (active) {
+          setError(err.message || "Unable to load studios");
+        }
       } finally {
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+        }
       }
     };
 
@@ -60,8 +76,8 @@ export default function StudiosPage() {
 
     return studios.filter((studio) => {
       const matchesCategory =
-  category === "All Categories" ||
-  normalizeCategory(studio.category) === category;
+        category === "All Categories" ||
+        normalizeCategory(studio.category) === category;
 
       const matchesSearch =
         !query ||
@@ -80,9 +96,11 @@ export default function StudiosPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.2em] text-orange-500">
             Discover your creative space
           </p>
+
           <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl">
             Explore Studios
           </h1>
+
           <p className="mt-4 max-w-2xl text-muted-foreground">
             Find the right creative environment for photography, filmmaking,
             podcasting, music production, and more.
@@ -91,6 +109,7 @@ export default function StudiosPage() {
           <div className="mt-8 grid gap-4 rounded-2xl border border-border bg-background p-4 shadow-sm md:grid-cols-[1fr_240px]">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+
               <input
                 type="search"
                 value={search}
@@ -102,6 +121,7 @@ export default function StudiosPage() {
 
             <div className="relative">
               <SlidersHorizontal className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
               <select
                 value={category}
                 onChange={(event) => setCategory(event.target.value)}
@@ -121,7 +141,10 @@ export default function StudiosPage() {
       <section className="mx-auto max-w-7xl px-5 py-16 lg:px-8">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold">Available Creative Spaces</h2>
+            <h2 className="text-2xl font-bold">
+              Available Creative Spaces
+            </h2>
+
             <p className="mt-2 text-sm text-muted-foreground">
               {loading
                 ? "Loading studios..."
@@ -146,6 +169,7 @@ export default function StudiosPage() {
         {!loading && error && (
           <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-8 text-center">
             <p className="font-semibold text-red-500">{error}</p>
+
             <p className="mt-2 text-sm text-muted-foreground">
               Make sure the backend server is running.
             </p>
@@ -155,6 +179,7 @@ export default function StudiosPage() {
         {!loading && !error && filteredStudios.length === 0 && (
           <div className="rounded-2xl border border-dashed border-border py-20 text-center">
             <h3 className="text-xl font-bold">No studios found</h3>
+
             <p className="mt-2 text-sm text-muted-foreground">
               Try another search or category.
             </p>
@@ -174,12 +199,19 @@ export default function StudiosPage() {
                   aria-label={`View ${studio.title}`}
                 >
                   <div className="relative h-60 overflow-hidden bg-muted">
-                    <div
-                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                      style={{
-                        backgroundImage: `url("${studio.image}")`,
-                      }}
-                    />
+                    {studio.image ? (
+                      <div
+                        className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                        style={{
+                          backgroundImage: `url("${studio.image}")`,
+                        }}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
+                        No image available
+                      </div>
+                    )}
+
                     <span className="absolute left-4 top-4 rounded-full bg-background/95 px-3 py-1.5 text-xs font-semibold">
                       {studio.category}
                     </span>
@@ -190,6 +222,29 @@ export default function StudiosPage() {
                   <h3 className="text-lg font-bold tracking-tight">
                     {studio.title}
                   </h3>
+
+                  <div className="mt-2 flex items-center gap-1.5 text-sm">
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+
+                    {Number(studio.reviewCount || 0) > 0 ? (
+                      <>
+                        <span className="font-semibold">
+                          {Number(studio.averageRating).toFixed(1)}
+                        </span>
+
+                        <span className="text-muted-foreground">
+                          ({studio.reviewCount}{" "}
+                          {Number(studio.reviewCount) === 1
+                            ? "review"
+                            : "reviews"})
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        No reviews yet
+                      </span>
+                    )}
+                  </div>
 
                   <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
                     <MapPin size={16} className="shrink-0" />
@@ -204,7 +259,7 @@ export default function StudiosPage() {
                   <div className="mt-5 flex items-center justify-between border-t border-border pt-4">
                     <p className="text-sm text-muted-foreground">
                       <span className="text-xl font-bold text-foreground">
-                        ৳{Number(studio.hourlyRate).toLocaleString("en-BD")}
+                        ৳{Number(studio.hourlyRate || 0).toLocaleString("en-BD")}
                       </span>
                       / hour
                     </p>

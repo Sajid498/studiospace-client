@@ -3,35 +3,54 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarDays, Clock, MapPin, LoaderCircle } from "lucide-react";
+import {
+  CalendarDays,
+  Clock,
+  MapPin,
+  LoaderCircle,
+  Star,
+  Send,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   getMyBookings,
+  getMyReviews,
   cancelBooking,
   updateBookingStatus,
+  createReview,
 } from "@/lib/api";
 import { useSession } from "@/lib/auth-client";
 
 export default function MyBookingsPage() {
   const { data: session, isPending } = useSession();
+
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState("");
+  const [reviewSubmittingId, setReviewSubmittingId] = useState("");
   const [error, setError] = useState("");
   const [bookingToCancel, setBookingToCancel] = useState(null);
+  const [reviewedIds, setReviewedIds] = useState([]);
+  const [reviewDrafts, setReviewDrafts] = useState({});
 
-  const loadBookings = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const data = await getMyBookings();
-      setBookings(data);
-    } catch (err) {
-      setError(err.message || "Failed to load bookings");
-    } finally {
-      setLoading(false);
-    }
-  };
+const loadBookings = async () => {
+  try {
+    setLoading(true);
+    setError("");
+
+    const [bookingData, reviewData] = await Promise.all([
+      getMyBookings(),
+      getMyReviews(),
+    ]);
+
+    setBookings(bookingData);
+    setReviewedIds(reviewData);
+  } catch (err) {
+    setError(err.message || "Failed to load bookings");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     if (!isPending && session?.user) {
@@ -58,6 +77,63 @@ export default function MyBookingsPage() {
       toast.error(err.message || "Action failed");
     } finally {
       setProcessingId("");
+    }
+  };
+
+  const handleReviewDraftChange = (bookingId, field, value) => {
+    setReviewDrafts((previous) => ({
+      ...previous,
+      [bookingId]: {
+        rating: previous[bookingId]?.rating || 0,
+        comment: previous[bookingId]?.comment || "",
+        ...previous[bookingId],
+        [field]: value,
+      },
+    }));
+  };
+
+  const handleSubmitReview = async (bookingId) => {
+    const draft = reviewDrafts[bookingId];
+
+    if (!draft?.rating || draft.rating < 1 || draft.rating > 5) {
+      toast.error("Please select a rating from 1 to 5 stars.");
+      return;
+    }
+
+    if (!draft.comment?.trim() || draft.comment.trim().length < 5) {
+      toast.error("Your review must contain at least 5 characters.");
+      return;
+    }
+
+    if (draft.comment.trim().length > 1000) {
+      toast.error("Your review cannot exceed 1000 characters.");
+      return;
+    }
+
+    try {
+      setReviewSubmittingId(bookingId);
+
+      await createReview({
+        bookingId,
+        rating: Number(draft.rating),
+        comment: draft.comment.trim(),
+      });
+
+      setReviewedIds((previous) => [...previous, bookingId]);
+
+      setReviewDrafts((previous) => ({
+        ...previous,
+        [bookingId]: {
+          rating: 0,
+          comment: "",
+        },
+      }));
+
+      toast.success("Your review has been submitted successfully.");
+    } catch (err) {
+      toast.error(err.message || "Failed to submit review");
+    } finally {
+      setReviewSubmittingId("");
     }
   };
 
@@ -150,23 +226,44 @@ export default function MyBookingsPage() {
             const isHost = booking.hostId === session.user.id;
             const processing = processingId === booking._id;
 
+            const canReview =
+              isRenter &&
+              booking.status === "Completed" &&
+              new Date(booking.endAt) <= new Date();
+
+            const alreadyReviewed = reviewedIds.includes(booking._id);
+            const draft = reviewDrafts[booking._id] || {
+              rating: 0,
+              comment: "",
+            };
+
+            const submittingReview =
+              reviewSubmittingId === booking._id;
+
             return (
               <article
                 key={booking._id}
                 className="overflow-hidden rounded-2xl border border-border bg-card"
               >
                 <div className="grid md:grid-cols-[240px_1fr]">
-                  <img
-                    src={booking.studioImage}
-                    alt={booking.studioTitle}
-                    className="h-52 w-full object-cover md:h-full"
-                  />
+                  {booking.studioImage ? (
+                    <img
+                      src={booking.studioImage}
+                      alt={booking.studioTitle}
+                      className="h-52 w-full object-cover md:h-full"
+                    />
+                  ) : (
+                    <div className="flex h-52 items-center justify-center bg-muted text-sm text-muted-foreground md:h-full">
+                      No image available
+                    </div>
+                  )}
 
                   <div className="p-6">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <span className="text-sm font-semibold text-orange-500">
                         {booking.studioCategory}
                       </span>
+
                       <span
                         className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusStyle(
                           booking.status
@@ -264,6 +361,121 @@ export default function MyBookingsPage() {
                         )}
                       </div>
                     </div>
+
+                    {canReview && (
+                      <div className="mt-6 border-t border-border pt-6">
+                        {alreadyReviewed ? (
+                          <div className="rounded-xl bg-green-50 p-4 text-sm font-medium text-green-800">
+                            Thank you! You have submitted your review for this
+                            booking.
+                          </div>
+                        ) : (
+                          <div>
+                            <h3 className="text-lg font-bold">
+                              Share Your Experience
+                            </h3>
+
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              Rate this studio based on your booking
+                              experience.
+                            </p>
+
+                            <div className="mt-4">
+                              <p className="mb-2 text-sm font-medium">
+                                Your Rating
+                              </p>
+
+                              <div className="flex items-center gap-2">
+                                {[1, 2, 3, 4, 5].map((rating) => (
+                                  <button
+                                    key={rating}
+                                    type="button"
+                                    disabled={submittingReview}
+                                    onClick={() =>
+                                      handleReviewDraftChange(
+                                        booking._id,
+                                        "rating",
+                                        rating
+                                      )
+                                    }
+                                    aria-label={`Rate ${rating} out of 5`}
+                                    className="rounded p-1 transition hover:scale-110 disabled:opacity-50"
+                                  >
+                                    <Star
+                                      size={27}
+                                      className={
+                                        rating <= draft.rating
+                                          ? "fill-amber-400 text-amber-400"
+                                          : "text-muted-foreground"
+                                      }
+                                    />
+                                  </button>
+                                ))}
+                              </div>
+
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {draft.rating > 0
+                                  ? `${draft.rating} out of 5 stars`
+                                  : "Select your rating"}
+                              </p>
+                            </div>
+
+                            <div className="mt-4">
+                              <label
+                                htmlFor={`review-${booking._id}`}
+                                className="mb-2 block text-sm font-medium"
+                              >
+                                Your Review
+                              </label>
+
+                              <textarea
+                                id={`review-${booking._id}`}
+                                rows={4}
+                                minLength={5}
+                                maxLength={1000}
+                                value={draft.comment}
+                                disabled={submittingReview}
+                                onChange={(event) =>
+                                  handleReviewDraftChange(
+                                    booking._id,
+                                    "comment",
+                                    event.target.value
+                                  )
+                                }
+                                placeholder="Tell others about your experience..."
+                                className="w-full resize-y rounded-xl border border-input bg-background p-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 disabled:opacity-50"
+                              />
+
+                              <p className="mt-1 text-right text-xs text-muted-foreground">
+                                {draft.comment.length}/1000 characters
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              disabled={submittingReview}
+                              onClick={() => handleSubmitReview(booking._id)}
+                              className="mt-4 inline-flex items-center gap-2 rounded-full bg-orange-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {submittingReview ? (
+                                <>
+                                  <LoaderCircle
+                                    size={16}
+                                    className="animate-spin"
+                                  />
+                                  Submitting...
+                                </>
+                              ) : (
+                                <>
+                                  <Send size={16} />
+                                  Submit Review
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </article>

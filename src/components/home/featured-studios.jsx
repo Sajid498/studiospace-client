@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, MapPin } from "lucide-react";
+import { ArrowRight, MapPin, Star } from "lucide-react";
 import { getStudios } from "@/lib/api";
 
 export default function FeaturedStudios() {
@@ -133,6 +133,28 @@ export default function FeaturedStudios() {
                   <h3 className="text-lg font-bold tracking-tight">
                     {studio.title}
                   </h3>
+
+                  <div className="mt-2 flex items-center gap-1.5 text-sm">
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+
+                    {Number(studio.reviewCount || 0) > 0 ? (
+                      <>
+                        <span className="font-semibold">
+                          {Number(studio.averageRating).toFixed(1)}
+                        </span>
+                        <span className="text-muted-foreground">
+                          ({studio.reviewCount}{" "}
+                          {Number(studio.reviewCount) === 1
+                            ? "review"
+                            : "reviews"})
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground">
+                        No reviews yet
+                      </span>
+                    )}
+                  </div>
 
                   <p className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
                     <MapPin className="h-4 w-4 shrink-0" />
