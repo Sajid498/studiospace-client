@@ -8,12 +8,11 @@ import {
   ArrowLeft,
   LoaderCircle,
   Plus,
-  X,
   Image as ImageIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "@/lib/auth-client";
-import { createStudio } from "@/lib/api";
+import { createStudio, uploadStudioImage } from "@/lib/api";
 
 const categories = [
   "Photo Studio",
@@ -36,6 +35,13 @@ const amenityOptions = [
   "Restroom",
 ];
 
+const allowedTypes = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+];
+
 export default function AddStudioPage() {
   const router = useRouter();
   const { data: session, isPending } = useSession();
@@ -53,6 +59,12 @@ export default function AddStudioPage() {
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const inputClass =
+    "mt-2 h-12 w-full rounded-lg border border-input bg-background px-4 text-sm outline-none transition focus:border-orange-500";
+
+  const labelClass = "text-sm font-semibold";
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -61,6 +73,41 @@ export default function AddStudioPage() {
       ...previous,
       [name]: value,
     }));
+  };
+
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Choose a JPEG, PNG, WEBP, or GIF image");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be 5 MB or smaller");
+      event.target.value = "";
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const imageUrl = await uploadStudioImage(file);
+
+      setForm((previous) => ({
+        ...previous,
+        image: imageUrl,
+      }));
+
+      toast.success("Image uploaded successfully");
+    } catch (error) {
+      toast.error(error.message || "Image upload failed");
+      event.target.value = "";
+    } finally {
+      setUploading(false);
+    }
   };
 
   const toggleAmenity = (amenity) => {
@@ -81,6 +128,16 @@ export default function AddStudioPage() {
       return;
     }
 
+    if (uploading) {
+      toast.error("Please wait for the image upload to finish");
+      return;
+    }
+
+    if (!form.image.trim()) {
+      toast.error("Please upload an image or provide an image URL");
+      return;
+    }
+
     if (form.amenities.length === 0) {
       toast.error("Please select at least one amenity");
       return;
@@ -96,7 +153,10 @@ export default function AddStudioPage() {
       return;
     }
 
-    if (!Number.isInteger(Number(form.maxCapacity)) || Number(form.maxCapacity) < 1) {
+    if (
+      !Number.isInteger(Number(form.maxCapacity)) ||
+      Number(form.maxCapacity) < 1
+    ) {
       toast.error("Maximum capacity must be a positive whole number");
       return;
     }
@@ -145,11 +205,6 @@ export default function AddStudioPage() {
       </main>
     );
   }
-
-  const inputClass =
-    "mt-2 h-12 w-full rounded-lg border border-input bg-background px-4 text-sm outline-none transition focus:border-orange-500";
-
-  const labelClass = "text-sm font-semibold";
 
   return (
     <main className="min-h-screen bg-background px-5 py-12 lg:px-8">
@@ -298,32 +353,56 @@ export default function AddStudioPage() {
           <section>
             <h2 className="text-xl font-bold">Studio Image</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Provide a publicly accessible image URL for your studio.
+              Upload an image or provide a publicly accessible image URL.
+              Maximum file size: 5 MB.
             </p>
 
-            <div className="mt-5">
-              <label htmlFor="image" className={labelClass}>
-                Image URL *
-              </label>
-              <div className="relative mt-2">
-                <ImageIcon
-                  size={18}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
-                />
+            <div className="mt-5 space-y-4">
+              <div>
+                <label htmlFor="studio-image-file" className={labelClass}>
+                  Upload Image
+                </label>
                 <input
-                  id="image"
-                  name="image"
-                  type="url"
-                  value={form.image}
-                  onChange={handleChange}
-                  placeholder="https://example.com/studio-image.jpg"
-                  required
-                  className="h-12 w-full rounded-lg border border-input bg-background pl-11 pr-4 text-sm outline-none focus:border-orange-500"
+                  id="studio-image-file"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleImageUpload}
+                  disabled={uploading || submitting}
+                  className="mt-2 block w-full rounded-lg border border-input bg-background p-3 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-orange-500 file:px-4 file:py-2 file:font-semibold file:text-white"
                 />
+
+                {uploading && (
+                  <p className="mt-2 flex items-center gap-2 text-sm text-orange-500">
+                    <LoaderCircle size={16} className="animate-spin" />
+                    Uploading image...
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="image" className={labelClass}>
+                  Or paste an Image URL *
+                </label>
+                <div className="relative mt-2">
+                  <ImageIcon
+                    size={18}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  />
+                  <input
+                    id="image"
+                    name="image"
+                    type="url"
+                    value={form.image}
+                    onChange={handleChange}
+                    placeholder="https://example.com/studio-image.jpg"
+                    required
+                    className="h-12 w-full rounded-lg border border-input bg-background pl-11 pr-4 text-sm outline-none focus:border-orange-500"
+                  />
+                </div>
               </div>
 
               {form.image && (
-                <div className="mt-4 overflow-hidden rounded-xl border border-border">
+                <div className="overflow-hidden rounded-xl border border-border">
                   <img
                     src={form.image}
                     alt="Studio preview"
@@ -424,7 +503,7 @@ export default function AddStudioPage() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || uploading}
               className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-orange-500 px-8 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {submitting ? (

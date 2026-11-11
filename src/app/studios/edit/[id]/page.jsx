@@ -7,7 +7,11 @@ import Link from "next/link";
 import { ArrowLeft, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "@/lib/auth-client";
-import { getStudioById, updateStudio } from "@/lib/api";
+import {
+  getStudioById,
+  updateStudio,
+  uploadStudioImage,
+} from "@/lib/api";
 
 const categories = [
   "Photo Studio",
@@ -30,6 +34,13 @@ const amenityOptions = [
   "Restroom",
 ];
 
+const allowedTypes = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+];
+
 export default function EditStudioPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -49,7 +60,13 @@ export default function EditStudioPage() {
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+
+  const inputClass =
+    "mt-2 h-12 w-full rounded-lg border border-input bg-background px-4 text-sm outline-none transition focus:border-orange-500";
+
+  const labelClass = "text-sm font-semibold";
 
   useEffect(() => {
     if (isPending) return;
@@ -108,6 +125,41 @@ export default function EditStudioPage() {
     }));
   };
 
+  const handleImageUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Choose a JPEG, PNG, WEBP, or GIF image");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be 5 MB or smaller");
+      event.target.value = "";
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const imageUrl = await uploadStudioImage(file);
+
+      setForm((previous) => ({
+        ...previous,
+        image: imageUrl,
+      }));
+
+      toast.success("Image uploaded successfully");
+    } catch (err) {
+      toast.error(err.message || "Image upload failed");
+      event.target.value = "";
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const toggleAmenity = (amenity) => {
     setForm((previous) => ({
       ...previous,
@@ -119,6 +171,16 @@ export default function EditStudioPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (uploading) {
+      toast.error("Please wait for the image upload to finish");
+      return;
+    }
+
+    if (!form.image.trim()) {
+      toast.error("Please upload an image or provide an image URL");
+      return;
+    }
 
     if (form.amenities.length === 0) {
       toast.error("Please select at least one amenity");
@@ -135,7 +197,10 @@ export default function EditStudioPage() {
       return;
     }
 
-    if (!Number.isInteger(Number(form.maxCapacity)) || Number(form.maxCapacity) < 1) {
+    if (
+      !Number.isInteger(Number(form.maxCapacity)) ||
+      Number(form.maxCapacity) < 1
+    ) {
       toast.error("Maximum capacity must be a positive whole number");
       return;
     }
@@ -159,11 +224,6 @@ export default function EditStudioPage() {
       setSubmitting(false);
     }
   };
-
-  const inputClass =
-    "mt-2 h-12 w-full rounded-lg border border-input bg-background px-4 text-sm outline-none transition focus:border-orange-500";
-
-  const labelClass = "text-sm font-semibold";
 
   if (loading || isPending) {
     return (
@@ -217,7 +277,9 @@ export default function EditStudioPage() {
 
             <div className="mt-6 grid gap-5 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label htmlFor="title" className={labelClass}>Studio Title *</label>
+                <label htmlFor="title" className={labelClass}>
+                  Studio Title *
+                </label>
                 <input
                   id="title"
                   name="title"
@@ -230,7 +292,9 @@ export default function EditStudioPage() {
               </div>
 
               <div>
-                <label htmlFor="category" className={labelClass}>Category *</label>
+                <label htmlFor="category" className={labelClass}>
+                  Category *
+                </label>
                 <select
                   id="category"
                   name="category"
@@ -241,13 +305,17 @@ export default function EditStudioPage() {
                 >
                   <option value="">Select category</option>
                   {categories.map((category) => (
-                    <option key={category} value={category}>{category}</option>
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label htmlFor="maxCapacity" className={labelClass}>Maximum Capacity *</label>
+                <label htmlFor="maxCapacity" className={labelClass}>
+                  Maximum Capacity *
+                </label>
                 <input
                   id="maxCapacity"
                   name="maxCapacity"
@@ -262,7 +330,9 @@ export default function EditStudioPage() {
               </div>
 
               <div>
-                <label htmlFor="hourlyRate" className={labelClass}>Hourly Rate (৳) *</label>
+                <label htmlFor="hourlyRate" className={labelClass}>
+                  Hourly Rate (৳) *
+                </label>
                 <input
                   id="hourlyRate"
                   name="hourlyRate"
@@ -276,7 +346,9 @@ export default function EditStudioPage() {
               </div>
 
               <div>
-                <label htmlFor="securityDeposit" className={labelClass}>Security Deposit (৳) *</label>
+                <label htmlFor="securityDeposit" className={labelClass}>
+                  Security Deposit (৳) *
+                </label>
                 <input
                   id="securityDeposit"
                   name="securityDeposit"
@@ -290,7 +362,9 @@ export default function EditStudioPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label htmlFor="location" className={labelClass}>Location / Address *</label>
+                <label htmlFor="location" className={labelClass}>
+                  Location / Address *
+                </label>
                 <input
                   id="location"
                   name="location"
@@ -307,26 +381,55 @@ export default function EditStudioPage() {
 
           <section>
             <h2 className="text-xl font-bold">Studio Image</h2>
-            <label htmlFor="image" className={`${labelClass} mt-5 block`}>
-              Image URL *
-            </label>
-            <input
-              id="image"
-              name="image"
-              type="url"
-              value={form.image}
-              onChange={handleChange}
-              required
-              className={inputClass}
-            />
+            <p className="mt-1 text-sm text-muted-foreground">
+              Upload a new image or keep your current image. Maximum size: 5 MB.
+            </p>
 
-            {form.image && (
-              <img
-                src={form.image}
-                alt="Studio preview"
-                className="mt-4 h-56 w-full rounded-xl border border-border object-cover"
-              />
-            )}
+            <div className="mt-5 space-y-4">
+              <div>
+                <label htmlFor="studio-image-file" className={labelClass}>
+                  Upload New Image
+                </label>
+                <input
+                  id="studio-image-file"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  onChange={handleImageUpload}
+                  disabled={uploading || submitting}
+                  className="mt-2 block w-full rounded-lg border border-input bg-background p-3 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-orange-500 file:px-4 file:py-2 file:font-semibold file:text-white"
+                />
+
+                {uploading && (
+                  <p className="mt-2 flex items-center gap-2 text-sm text-orange-500">
+                    <LoaderCircle size={16} className="animate-spin" />
+                    Uploading image...
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="image" className={labelClass}>
+                  Image URL *
+                </label>
+                <input
+                  id="image"
+                  name="image"
+                  type="url"
+                  value={form.image}
+                  onChange={handleChange}
+                  required
+                  className={inputClass}
+                />
+              </div>
+
+              {form.image && (
+                <img
+                  src={form.image}
+                  alt="Studio preview"
+                  className="h-56 w-full rounded-xl border border-border object-cover"
+                />
+              )}
+            </div>
           </section>
 
           <div className="border-t border-border" />
@@ -381,6 +484,7 @@ export default function EditStudioPage() {
                   className={`${inputClass} opacity-70`}
                 />
               </div>
+
               <div>
                 <label className={labelClass}>Host Email</label>
                 <input
@@ -402,7 +506,7 @@ export default function EditStudioPage() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || uploading}
               className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-orange-500 px-8 text-sm font-semibold text-white hover:bg-orange-600 disabled:opacity-60"
             >
               {submitting ? (

@@ -12,7 +12,6 @@ export async function getStudios() {
   }
 
   const result = await response.json();
-
   return result.data || [];
 }
 
@@ -26,8 +25,26 @@ export async function getStudioById(id) {
   }
 
   const result = await response.json();
-
   return result.data;
+}
+
+export async function uploadStudioImage(file) {
+  const formData = new FormData();
+  formData.append("image", file);
+
+  const response = await fetch(`${API_URL}/api/uploads`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to upload image");
+  }
+
+  return result.data.url;
 }
 
 export async function createBooking(bookingData) {
@@ -63,6 +80,7 @@ export async function getMyBookings() {
 
   return result.data || [];
 }
+
 export async function cancelBooking(id) {
   const response = await fetch(`${API_URL}/api/bookings/${id}/cancel`, {
     method: "PATCH",
@@ -96,7 +114,6 @@ export async function updateBookingStatus(id, status) {
 
   return result;
 }
-
 
 export async function createStudio(studioData) {
   const response = await fetch(`${API_URL}/api/studios`, {
