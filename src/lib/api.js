@@ -1,0 +1,98 @@
+
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+export async function getStudios() {
+  const response = await fetch(`${API_URL}/api/studios`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch studios");
+  }
+
+  const result = await response.json();
+
+  return result.data || [];
+}
+
+export async function getStudioById(id) {
+  const response = await fetch(`${API_URL}/api/studios/${id}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch studio details");
+  }
+
+  const result = await response.json();
+
+  return result.data;
+}
+
+export async function createBooking(bookingData) {
+  const response = await fetch(`${API_URL}/api/bookings`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(bookingData),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to create booking");
+  }
+
+  return result.data;
+}
+
+export async function getMyBookings() {
+  const response = await fetch(`${API_URL}/api/bookings/my-bookings`, {
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to load bookings");
+  }
+
+  return result.data || [];
+}
+export async function cancelBooking(id) {
+  const response = await fetch(`${API_URL}/api/bookings/${id}/cancel`, {
+    method: "PATCH",
+    credentials: "include",
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to cancel booking");
+  }
+
+  return result;
+}
+
+export async function updateBookingStatus(id, status) {
+  const response = await fetch(`${API_URL}/api/bookings/${id}/status`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status }),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.message || "Failed to update booking");
+  }
+
+  return result;
+}
