@@ -1,6 +1,7 @@
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://studiospace-server-94ez.onrender.com";
 
 export async function getStudios() {
   const response = await fetch(`${API_URL}/api/studios`, {
